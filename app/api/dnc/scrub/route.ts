@@ -41,13 +41,11 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerClient();
     const { data, error } = await supabase
-      .from("dnc_list")
-      .select("phone_number")
-      .in("phone_number", phone_numbers);
+      .rpc("scrub_dnc", { numbers: phone_numbers });
 
     if (error) throw error;
 
-    const blocked = data.map((entry) => entry.phone_number);
+    const blocked = (data ?? []).map((entry: { phone_number: string }) => entry.phone_number);
     const clean = phone_numbers.filter((phone) => !blocked.includes(phone));
 
     return NextResponse.json({ clean, blocked });
