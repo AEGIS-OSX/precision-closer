@@ -68,11 +68,15 @@ export async function POST(request: Request): Promise<Response> {
         continue
       }
 
-      const { data: dncData } = await client
+      const { data: dncData, error: dncError } = await client
         .from("dnc_list")
         .select("id")
         .eq("phone_number", phoneNumber)
         .limit(1)
+
+      if (dncError) {
+        throw dncError
+      }
 
       if (dncData && dncData.length > 0) {
         skipped.push({ row: rowNum, phone_number: phoneNumber })

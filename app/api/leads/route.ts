@@ -62,11 +62,15 @@ export async function POST(request: Request): Promise<Response> {
 
     const client = createServerClient()
 
-    const { data: dncData } = await client
+    const { data: dncData, error: dncError } = await client
       .from("dnc_list")
       .select("id")
       .eq("phone_number", phoneNumber)
       .limit(1)
+
+    if (dncError) {
+      throw dncError
+    }
 
     if (dncData && dncData.length > 0) {
       throw new ApiValidationError("phone_number", "Phone number is on the DNC list")
@@ -87,6 +91,10 @@ export async function POST(request: Request): Promise<Response> {
 
     if (error) {
       throw error
+    }
+
+    if (!data) {
+      throw new Error("Insert returned no data")
     }
 
     const lead = data as Lead
