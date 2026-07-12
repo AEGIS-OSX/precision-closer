@@ -40,6 +40,9 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServerClient();
+    // Single query. PostgREST translates the `in` filter to a
+    // `WHERE phone_number = ANY($1)` bound-parameter predicate on the wire,
+    // which is exactly the SQL contract in the spec.
     const { data, error } = await supabase
       .from("dnc_list")
       .select("phone_number")
@@ -47,7 +50,9 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
-    const blocked = data.map((entry) => entry.phone_number);
+    // Supabase types `data` as `T[] | null`; strict mode does not narrow it
+    // after the error guard, so default to an empty array before mapping.
+    const blocked = (data ?? []).map((entry) => entry.phone_number);
     const clean = phone_numbers.filter((phone) => !blocked.includes(phone));
 
     return NextResponse.json({ clean, blocked });
