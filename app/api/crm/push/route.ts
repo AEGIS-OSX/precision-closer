@@ -4,10 +4,12 @@ import { requireAuth } from "@/lib/auth";
 import { errorResponse, ApiNotFoundError } from "@/lib/errors";
 import { CrmPushRequest } from "@/lib/types";
 
+type CrmPushBody = CrmPushRequest & { crm_endpoint: string };
+
 export async function POST(request: NextRequest) {
   try {
     await requireAuth(request);
-    const body = (await request.json()) as CrmPushRequest;
+    const body = (await request.json()) as CrmPushBody;
     const { lead_id, crm_endpoint } = body;
 
     if (typeof crm_endpoint !== "string" || !crm_endpoint.startsWith("https://")) {
