@@ -1,1 +1,30 @@
-body { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; padding: 2rem; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #1E2535;
+  --color-accent: #1A6BFF;
+  --color-bg: #1E2535;
+  --color-text: #E2E8F0;
+  --color-muted: #666666;
+  --color-border: #2A3347;
+  --space-base: 8px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --font-display: 'Inter', Georgia, serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+html, body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
