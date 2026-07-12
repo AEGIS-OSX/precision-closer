@@ -7,7 +7,9 @@ export function createServerClient() {
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error("Missing Supabase environment variables");
   }
-  return createClient(supabaseUrl, serviceRoleKey, {
+  const url: string = supabaseUrl;
+  const key: string = serviceRoleKey;
+  return createClient(url, key, {
     auth: {
       persistSession: false,
     },
@@ -19,7 +21,9 @@ export function createAuthClient() {
   if (!supabaseUrl || !anonKey) {
     throw new Error("Missing Supabase environment variables");
   }
-  return createClient(supabaseUrl, anonKey, {
+  const url: string = supabaseUrl;
+  const key: string = anonKey;
+  return createClient(url, key, {
     auth: {
       persistSession: false,
     },

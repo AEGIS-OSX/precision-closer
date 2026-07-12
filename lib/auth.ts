@@ -1,6 +1,13 @@
 import { createAuthClient, createServerClient } from "@/lib/supabase-server";
 import { ApiAuthError } from "@/lib/errors";
-import { createHmac, createPublicKey, verify } from "crypto";
+import { createHmac, createPublicKey, timingSafeEqual, verify } from "crypto";
+
+function timingSafeEqualStr(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
 
 export async function requireAuth(request: Request): Promise<{ userId: string; role: string }> {
   const authHeader = request.headers.get("Authorization");
@@ -70,7 +77,7 @@ export async function verifyWebhookSignature(
         }
 
         const expected = createHmac("sha1", authToken).update(payload).digest("base64");
-        return expected === twilioSignature;
+        return timingSafeEqualStr(expected, twilioSignature);
       }
 
       case "telnyx": {
@@ -95,14 +102,19 @@ export async function verifyWebhookSignature(
         const secret = request.headers.get("x-vapi-secret");
         const expectedSecret = process.env.VAPI_WEBHOOK_SECRET;
         if (!secret || !expectedSecret) return false;
-        return secret === expectedSecret;
+        return timingSafeEqualStr(secret, expectedSecret);
       }
 
       case "retell": {
         const signature = request.headers.get("x-retell-signature");
         const expectedSecret = process.env.RETELL_WEBHOOK_SECRET;
         if (!signature || !expectedSecret) return false;
-        return signature === expectedSecret;
+
+        const clonedRequest = request.clone();
+        const body = await clonedRequest.text();
+        const expectedDigest = createHmac("sha256", expectedSecret).update(body).digest("base64");
+
+        return timingSafeEqualStr(signature, expectedDigest);
       }
 
       default:
