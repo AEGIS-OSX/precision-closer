@@ -133,18 +133,21 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================
--- Apply triggers to tables with updated_at
+-- Apply triggers to tables with updated_at (idempotent)
 -- ============================================================
+DROP TRIGGER IF EXISTS set_updated_at ON leads;
 CREATE TRIGGER set_updated_at
     BEFORE UPDATE ON leads
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS set_updated_at ON calls;
 CREATE TRIGGER set_updated_at
     BEFORE UPDATE ON calls
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS set_updated_at ON qualification_data;
 CREATE TRIGGER set_updated_at
     BEFORE UPDATE ON qualification_data
     FOR EACH ROW
