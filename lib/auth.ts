@@ -1,6 +1,6 @@
 import { createAuthClient, createServerClient } from "@/lib/supabase-server";
 import { ApiAuthError } from "@/lib/errors";
-import { createHmac, createPublicKey, verify } from "crypto";
+import { createHmac, createPublicKey, verify, timingSafeEqual } from "crypto";
 
 export async function requireAuth(request: Request): Promise<{ userId: string; role: string }> {
   const authHeader = request.headers.get("Authorization");
@@ -41,6 +41,17 @@ export async function requireRole(
   return auth;
 }
 
+function safeCompare(a: string, b: string): boolean {
+  try {
+    const bufA = Buffer.from(a, "utf8");
+    const bufB = Buffer.from(b, "utf8");
+    if (bufA.length !== bufB.length) return false;
+    return timingSafeEqual(bufA, bufB);
+  } catch {
+    return false;
+  }
+}
+
 export async function verifyWebhookSignature(
   request: Request,
   provider: "twilio" | "telnyx" | "vapi" | "retell"
@@ -70,7 +81,7 @@ export async function verifyWebhookSignature(
         }
 
         const expected = createHmac("sha1", authToken).update(payload).digest("base64");
-        return expected === twilioSignature;
+        return safeCompare(expected, twilioSignature);
       }
 
       case "telnyx": {
@@ -95,14 +106,19 @@ export async function verifyWebhookSignature(
         const secret = request.headers.get("x-vapi-secret");
         const expectedSecret = process.env.VAPI_WEBHOOK_SECRET;
         if (!secret || !expectedSecret) return false;
-        return secret === expectedSecret;
+        return safeCompare(secret, expectedSecret);
       }
 
       case "retell": {
         const signature = request.headers.get("x-retell-signature");
         const expectedSecret = process.env.RETELL_WEBHOOK_SECRET;
         if (!signature || !expectedSecret) return false;
-        return signature === expectedSecret;
+
+        const clonedRequest = request.clone();
+        const body = await clonedRequest.text();
+
+        const expected = createHmac("sha256", expectedSecret).update(body).digest("base64");
+        return safeCompare(expected, signature);
       }
 
       default:
