@@ -26,14 +26,9 @@ export function validateEnum<T extends string>(
 }
 
 export function validateBatchSize(value: unknown): number {
-  const num =
-    typeof value === "string"
-      ? parseInt(value, 10)
-      : typeof value === "number"
-        ? value
-        : NaN;
+  const num = typeof value === "string" ? parseInt(value, 10) : Number(value);
 
-  if (isNaN(num) || num < 1 || num > 10) {
+  if (!Number.isFinite(num) || num < 1 || num > 10) {
     throw new ApiValidationError(
       "batch_size",
       "batch_size must be between 1 and 10"
