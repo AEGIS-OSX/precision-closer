@@ -32,9 +32,9 @@ function H4({ children }: { children: ReactNode }) {
   );
 }
 
-function P({ children }: { children: ReactNode }) {
+function P({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <p className="text-[length:var(--font-size-body)] leading-[var(--line-height-normal)] text-[var(--color-text-primary)] mb-[var(--space-4)]">
+    <p className={`text-[length:var(--font-size-body)] leading-[var(--line-height-normal)] text-[var(--color-text-primary)] mb-[var(--space-4)] ${className}`}>
       {children}
     </p>
   );
@@ -52,7 +52,7 @@ function CodeBlock({ children, lang = "json" }: { children: ReactNode; lang?: st
 
 function InlineCode({ children }: { children: ReactNode }) {
   return (
-    <code className="bg-[var(--color-surface-2)] text-[length:var(--font-size-data)] font-[family-name:var(--font-mono)] text-[var(--color-text-transcript)] px-[var(--space-1)] py-[2px] rounded-[var(--radius-sm)]">
+    <code className="bg-[var(--color-surface-2)] text-[length:var(--font-size-data)] font-[family-name:var(--font-mono)] text-[var(--color-text-transcript)] px-[var(--space-1)] py-[var(--space-1)] rounded-[var(--radius-sm)]">
       {children}
     </code>
   );
@@ -106,7 +106,7 @@ function Badge({ children, color = "neutral" }: { children: ReactNode; color?: "
     neutral: "text-[var(--color-semantic-neutral)]",
   };
   return (
-    <span className={`inline-block text-[length:var(--font-size-data)] font-[family-name:var(--font-mono)] font-medium ${colorMap[color]} bg-[var(--color-surface-2)] px-[var(--space-2)] py-[2px] rounded-[var(--radius-sm)]`}>
+    <span className={`inline-block text-[length:var(--font-size-data)] font-[family-name:var(--font-mono)] font-medium ${colorMap[color]} bg-[var(--color-surface-2)] px-[var(--space-2)] py-[var(--space-1)] rounded-[var(--radius-sm)]`}>
       {children}
     </span>
   );
