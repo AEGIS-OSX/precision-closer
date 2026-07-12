@@ -1,6 +1,6 @@
 import { createAuthClient, createServerClient } from "@/lib/supabase-server";
 import { ApiAuthError } from "@/lib/errors";
-import { createHmac, createPublicKey, verify } from "crypto";
+import { createHmac, createPublicKey, verify, timingSafeEqual } from "crypto";
 
 export async function requireAuth(request: Request): Promise<{ userId: string; role: string }> {
   const authHeader = request.headers.get("Authorization");
@@ -95,14 +95,25 @@ export async function verifyWebhookSignature(
         const secret = request.headers.get("x-vapi-secret");
         const expectedSecret = process.env.VAPI_WEBHOOK_SECRET;
         if (!secret || !expectedSecret) return false;
-        return secret === expectedSecret;
+        const a = Buffer.from(secret);
+        const b = Buffer.from(expectedSecret);
+        if (a.length !== b.length) return false;
+        return timingSafeEqual(a, b);
       }
 
       case "retell": {
         const signature = request.headers.get("x-retell-signature");
         const expectedSecret = process.env.RETELL_WEBHOOK_SECRET;
         if (!signature || !expectedSecret) return false;
-        return signature === expectedSecret;
+
+        const clonedRequest = request.clone();
+        const body = await clonedRequest.text();
+        const expected = createHmac("sha256", expectedSecret).update(body).digest("base64");
+
+        const a = Buffer.from(signature);
+        const b = Buffer.from(expected);
+        if (a.length !== b.length) return false;
+        return timingSafeEqual(a, b);
       }
 
       default:
