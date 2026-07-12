@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
 import { requireAuth } from "@/lib/auth";
 import { errorResponse, ApiNotFoundError } from "@/lib/errors";
+import { CrmPushRequest } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
   try {
     await requireAuth(request);
-    const body = await request.json();
+    const body = (await request.json()) as CrmPushRequest;
     const { lead_id, crm_endpoint } = body;
 
     if (typeof crm_endpoint !== "string" || !crm_endpoint.startsWith("https://")) {
