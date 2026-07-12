@@ -1,32 +1,27 @@
-import { ApiRateLimitError } from "./errors";
+import { ApiRateLimitError } from "@/lib/errors";
 
-interface RateLimitEntry {
-  count: number;
-  windowStart: number;
-}
-
-const rateLimitMap = new Map<string, RateLimitEntry>();
-const WINDOW_MS = 60_000;
+const WINDOW_MS = 60000;
 const MAX_REQUESTS = 100;
+
+const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
 
 // TODO(production): replace with Redis-backed rate limiter for multi-instance
 export function checkRateLimit(userId: string): void {
   const now = Date.now();
-  const entry = rateLimitMap.get(userId);
+  const record = rateLimitMap.get(userId);
 
-  if (!entry) {
+  if (!record) {
     rateLimitMap.set(userId, { count: 1, windowStart: now });
     return;
   }
 
-  if (now - entry.windowStart >= WINDOW_MS) {
+  if (now - record.windowStart >= WINDOW_MS) {
     rateLimitMap.set(userId, { count: 1, windowStart: now });
     return;
   }
 
-  entry.count += 1;
-
-  if (entry.count > MAX_REQUESTS) {
+  record.count += 1;
+  if (record.count > MAX_REQUESTS) {
     throw new ApiRateLimitError();
   }
 }
