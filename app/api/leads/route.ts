@@ -1,14 +1,16 @@
+import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase-server"
 import { requireAuth } from "@/lib/auth"
 import { errorResponse, ApiValidationError } from "@/lib/errors"
 import { validateE164, validateRequiredString } from "@/lib/validate"
+import { checkRateLimit } from "@/lib/rate-limit"
 import type { Lead, CreateLeadRequest, CreateLeadResponse, PaginatedResponse } from "@/lib/types"
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    const session = await requireAuth(request)
-    const userId = session.userId
-    const role = session.role ?? null
+    const { userId, role } = await requireAuth(request)
+    const rl = await checkRateLimit(userId)
+    if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")
@@ -18,7 +20,7 @@ export async function GET(request: Request): Promise<Response> {
     const client = createServerClient()
     let query = client.from("leads").select("*", { count: "exact" })
 
-    // Scope to caller's leads unless admin
+    // Non-admin users only see their own leads
     if (role !== "admin") {
       query = query.eq("owner_id", userId)
     }
@@ -55,8 +57,9 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    const session = await requireAuth(request)
-    const userId = session.userId
+    const { userId } = await requireAuth(request)
+    const rl = await checkRateLimit(userId)
+    if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
 
     const body = (await request.json()) as CreateLeadRequest
 

@@ -1,95 +1,151 @@
-import { createServerClient } from "@/lib/supabase-server"
-import { requireAuth } from "@/lib/auth"
-import { errorResponse, ApiNotFoundError } from "@/lib/errors"
-import type { Lead, LeadStatus } from "@/lib/types"
+import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase-server";
+import { requireAuth } from "@/lib/auth";
+import { errorResponse, ApiNotFoundError } from "@/lib/errors";
+import { checkRateLimit } from "@/lib/rate-limit";
 
-export async function GET(request: Request, { params }: { params: { lead_id: string } }): Promise<Response> {
+export async function GET(request: NextRequest, { params }: { params: { lead_id: string } }) {
   try {
-    const session = await requireAuth(request)
-    const userId = session.userId
-    const role = session.role ?? null
+    const { userId, role } = await requireAuth(request);
+    const rl = await checkRateLimit(userId);
+    if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
 
-    const client = createServerClient()
-    let query = client
+    const supabase = createServerClient();
+    let query = supabase
       .from("leads")
       .select("*")
-      .eq("id", params.lead_id)
+      .eq("id", params.lead_id);
 
     if (role !== "admin") {
-      query = query.eq("owner_id", userId)
+      query = query.eq("owner_id", userId);
     }
 
-    const { data, error } = await query.single()
+    const { data, error } = await query.single();
 
     if (error || !data) {
-      throw new ApiNotFoundError("Lead", params.lead_id)
+      throw new ApiNotFoundError("Lead", params.lead_id);
     }
 
-    return new Response(JSON.stringify(data as Lead), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    })
+    return NextResponse.json(data);
   } catch (error) {
-    return errorResponse(error)
+    return errorResponse(error);
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { lead_id: string } }): Promise<Response> {
+export async function PATCH(request: NextRequest, { params }: { params: { lead_id: string } }) {
   try {
-    const session = await requireAuth(request)
-    const userId = session.userId
-    const role = session.role ?? null
+    const { userId, role } = await requireAuth(request);
+    const rl = await checkRateLimit(userId);
+    if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
 
-    const client = createServerClient()
+    const body = await request.json();
+    const supabase = createServerClient();
 
-    // Fetch the lead first to verify ownership before mutating
-    const { data: existing, error: fetchError } = await client
+    // Fetch the lead first to verify ownership
+    const { data: existing, error: fetchError } = await supabase
       .from("leads")
       .select("id, owner_id")
       .eq("id", params.lead_id)
-      .single()
+      .single();
 
     if (fetchError || !existing) {
-      throw new ApiNotFoundError("Lead", params.lead_id)
+      throw new ApiNotFoundError("Lead", params.lead_id);
     }
 
     if (role !== "admin" && existing.owner_id !== userId) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      })
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const body = (await request.json()) as Record<string, unknown>
-
-    const updateData: Partial<Pick<Lead, "status" | "metadata" | "company_name">> = {}
-
-    if (body.status !== undefined) {
-      updateData.status = body.status as LeadStatus
-    }
-    if (body.metadata !== undefined) {
-      updateData.metadata = body.metadata as Record<string, string>
-    }
-    if (body.company_name !== undefined) {
-      updateData.company_name = body.company_name as string | null
-    }
-
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from("leads")
-      .update(updateData)
+      .update(body)
       .eq("id", params.lead_id)
       .select()
-      .single()
+      .single();
 
     if (error || !data) {
-      throw new ApiNotFoundError("Lead", params.lead_id)
+      throw new ApiNotFoundError("Lead", params.lead_id);
     }
 
-    return new Response(JSON.stringify(data as Lead), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    })
+    return NextResponse.json(data);
   } catch (error) {
-    return errorResponse(error)
+    return errorResponse(error);
+  }
+}
+
+export async function PUT(request: NextRequest, { params }: { params: { lead_id: string } }) {
+  try {
+    const { userId, role } = await requireAuth(request);
+    const rl = await checkRateLimit(userId);
+    if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+
+    const body = await request.json();
+    const supabase = createServerClient();
+
+    // Fetch the lead first to verify ownership
+    const { data: existing, error: fetchError } = await supabase
+      .from("leads")
+      .select("id, owner_id")
+      .eq("id", params.lead_id)
+      .single();
+
+    if (fetchError || !existing) {
+      throw new ApiNotFoundError("Lead", params.lead_id);
+    }
+
+    if (role !== "admin" && existing.owner_id !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { data, error } = await supabase
+      .from("leads")
+      .update(body)
+      .eq("id", params.lead_id)
+      .select()
+      .single();
+
+    if (error || !data) {
+      throw new ApiNotFoundError("Lead", params.lead_id);
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: { lead_id: string } }) {
+  try {
+    const { userId, role } = await requireAuth(request);
+    const rl = await checkRateLimit(userId);
+    if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+
+    const supabase = createServerClient();
+
+    // Fetch the lead first to verify ownership
+    const { data: existing, error: fetchError } = await supabase
+      .from("leads")
+      .select("id, owner_id")
+      .eq("id", params.lead_id)
+      .single();
+
+    if (fetchError || !existing) {
+      throw new ApiNotFoundError("Lead", params.lead_id);
+    }
+
+    if (role !== "admin" && existing.owner_id !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { error } = await supabase
+      .from("leads")
+      .delete()
+      .eq("id", params.lead_id);
+
+    if (error) throw error;
+
+    return new Response(null, { status: 204 });
+  } catch (error) {
+    return errorResponse(error);
   }
 }
