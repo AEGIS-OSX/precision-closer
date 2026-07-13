@@ -8,7 +8,7 @@ import type { Lead } from "@/lib/types"
 function escapeCSV(value: string | null | undefined): string {
   const str = value ?? ""
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-    return `"${str.replace(/"/g, "\\\"\\\"")}"`
+    return `"${str.replace(/"/g, '\\"')}"`
   }
   return str
 }
@@ -30,9 +30,11 @@ function serializeCSV(leads: Lead[]): string {
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    const userId = await requireAuth(request)
+    await requireAuth(request)
+    const authHeader = request.headers.get("authorization") ?? request.headers.get("Authorization") ?? ""
+    const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
     const rl = await checkRateLimit(userId)
-    if (!rl.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
 
     const client = createServerClient()
     const { data, error } = await client.from("leads").select("*").order("created_at", { ascending: false })
@@ -47,7 +49,7 @@ export async function GET(request: Request): Promise<Response> {
       status: 200,
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": "attachment; filename=\"leads.csv\"",
+        "Content-Disposition": 'attachment; filename="leads.csv"',
       },
     })
   } catch (error) {

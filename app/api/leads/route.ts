@@ -8,9 +8,11 @@ import type { Lead, CreateLeadRequest, CreateLeadResponse, PaginatedResponse } f
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    const userId = await requireAuth(request)
+    await requireAuth(request)
+    const authHeader = request.headers.get("authorization") ?? request.headers.get("Authorization") ?? ""
+    const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
     const rl = await checkRateLimit(userId)
-    if (!rl.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")
@@ -52,9 +54,11 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    const userId = await requireAuth(request)
+    await requireAuth(request)
+    const authHeader = request.headers.get("authorization") ?? request.headers.get("Authorization") ?? ""
+    const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
     const rl = await checkRateLimit(userId)
-    if (!rl.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
 
     const body = (await request.json()) as CreateLeadRequest
 

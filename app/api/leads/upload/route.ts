@@ -5,6 +5,8 @@ import { checkRateLimit } from "@/lib/rate-limit"
 import { errorResponse, ApiValidationError } from "@/lib/errors"
 import { validateE164 } from "@/lib/validate"
 
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024 // 10MB
+
 function parseCSV(text: string): Array<Record<string, string>> {
   const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "")
   if (lines.length === 0) return []
@@ -26,14 +28,17 @@ function parseCSV(text: string): Array<Record<string, string>> {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    const userId = await requireAuth(request)
-    const rl = await checkRateLimit(userId)
-    if (!rl.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
-
-    const contentLength = request.headers.get('content-length')
-    if (contentLength && parseInt(contentLength, 10) > 10485760) {
-      return NextResponse.json({ error: 'File too large. Maximum size is 10MB.' }, { status: 413 })
+    // File size guard (Content-Length header)
+    const contentLengthHeader = request.headers.get("content-length")
+    if (contentLengthHeader !== null && parseInt(contentLengthHeader, 10) > MAX_UPLOAD_BYTES) {
+      return NextResponse.json({ error: "File too large. Maximum size is 10MB." }, { status: 413 })
     }
+
+    await requireAuth(request)
+    const authHeader = request.headers.get("authorization") ?? request.headers.get("Authorization") ?? ""
+    const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
+    const rl = await checkRateLimit(userId)
+    if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
 
     const formData = await request.formData()
     const fileEntry = formData.get("file")
@@ -43,8 +48,10 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const file = fileEntry as File
-    if (file.size > 10485760) {
-      return NextResponse.json({ error: 'File too large. Maximum size is 10MB.' }, { status: 413 })
+
+    // File size guard (stream/body size when Content-Length absent)
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json({ error: "File too large. Maximum size is 10MB." }, { status: 413 })
     }
 
     const text = (await file.text()).replace(/^\uFEFF/, "")
