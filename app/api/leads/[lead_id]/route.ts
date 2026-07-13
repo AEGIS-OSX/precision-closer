@@ -6,10 +6,10 @@ import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest, { params }: { params: { lead_id: string } }) {
   try {
-    await requireAuth(request);
+    const { userId } = await requireAuth(request);
     const authHeader = request.headers.get("authorization") ?? "";
-    const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous";
-    const rl = await checkRateLimit(userId);
+    const rlKey = authHeader.replace(/^Bearer\s+/i, "") || "anonymous";
+    const rl = await checkRateLimit(rlKey);
     if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
 
     const supabase = createServerClient();
@@ -17,6 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: { lead_id:
       .from("leads")
       .select("*")
       .eq("id", params.lead_id)
+      .eq("owner_id", userId)
       .single();
 
     if (error || !data) {
@@ -31,10 +32,10 @@ export async function GET(request: NextRequest, { params }: { params: { lead_id:
 
 export async function PUT(request: NextRequest, { params }: { params: { lead_id: string } }) {
   try {
-    await requireAuth(request);
+    const { userId } = await requireAuth(request);
     const authHeader = request.headers.get("authorization") ?? "";
-    const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous";
-    const rl = await checkRateLimit(userId);
+    const rlKey = authHeader.replace(/^Bearer\s+/i, "") || "anonymous";
+    const rl = await checkRateLimit(rlKey);
     if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
 
     const body = await request.json();
@@ -44,6 +45,7 @@ export async function PUT(request: NextRequest, { params }: { params: { lead_id:
       .from("leads")
       .update(body)
       .eq("id", params.lead_id)
+      .eq("owner_id", userId)
       .select()
       .single();
 
@@ -59,17 +61,18 @@ export async function PUT(request: NextRequest, { params }: { params: { lead_id:
 
 export async function DELETE(request: NextRequest, { params }: { params: { lead_id: string } }) {
   try {
-    await requireAuth(request);
+    const { userId } = await requireAuth(request);
     const authHeader = request.headers.get("authorization") ?? "";
-    const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous";
-    const rl = await checkRateLimit(userId);
+    const rlKey = authHeader.replace(/^Bearer\s+/i, "") || "anonymous";
+    const rl = await checkRateLimit(rlKey);
     if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
 
     const supabase = createServerClient();
     const { error } = await supabase
       .from("leads")
       .delete()
-      .eq("id", params.lead_id);
+      .eq("id", params.lead_id)
+      .eq("owner_id", userId);
 
     if (error) throw error;
 
