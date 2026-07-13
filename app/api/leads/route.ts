@@ -6,7 +6,9 @@ import type { Lead, CreateLeadRequest, CreateLeadResponse, PaginatedResponse } f
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    await requireAuth(request)
+    const session = await requireAuth(request)
+    const userId = session.userId
+    const role = session.role ?? null
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")
@@ -15,6 +17,11 @@ export async function GET(request: Request): Promise<Response> {
 
     const client = createServerClient()
     let query = client.from("leads").select("*", { count: "exact" })
+
+    // Scope to caller's leads unless admin
+    if (role !== "admin") {
+      query = query.eq("owner_id", userId)
+    }
 
     if (status) {
       query = query.eq("status", status)
@@ -48,7 +55,8 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    await requireAuth(request)
+    const session = await requireAuth(request)
+    const userId = session.userId
 
     const body = (await request.json()) as CreateLeadRequest
 
@@ -85,6 +93,7 @@ export async function POST(request: Request): Promise<Response> {
         company_name: body.company_name || null,
         metadata: body.metadata || null,
         status: "not_called",
+        owner_id: userId,
       })
       .select()
       .single()
