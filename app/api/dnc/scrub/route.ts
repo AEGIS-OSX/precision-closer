@@ -3,11 +3,17 @@ import { createServerClient } from "@/lib/supabase-server";
 import { requireAuth } from "@/lib/auth";
 import { errorResponse } from "@/lib/errors";
 import { validateE164 } from "@/lib/validate";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { DncScrubRequest } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
   try {
     await requireAuth(request);
+    const authHeader = request.headers.get("authorization") ?? "";
+    const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous";
+    const rl = await checkRateLimit(userId);
+    if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+
     const body = (await request.json()) as DncScrubRequest;
     const { phone_numbers } = body;
 

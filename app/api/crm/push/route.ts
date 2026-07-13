@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
 import { requireAuth } from "@/lib/auth";
 import { errorResponse, ApiNotFoundError } from "@/lib/errors";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { CrmPushRequest } from "@/lib/types";
 
 type CrmPushBody = CrmPushRequest & { crm_endpoint: string };
@@ -9,6 +10,11 @@ type CrmPushBody = CrmPushRequest & { crm_endpoint: string };
 export async function POST(request: NextRequest) {
   try {
     await requireAuth(request);
+    const authHeader = request.headers.get("authorization") ?? "";
+    const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous";
+    const rl = await checkRateLimit(userId);
+    if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+
     const body = (await request.json()) as CrmPushBody;
     const { lead_id, crm_endpoint } = body;
 
