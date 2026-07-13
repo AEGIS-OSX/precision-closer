@@ -1,25 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAuth, requireRole } from "@/lib/auth";
+import { NextResponse } from "next/server"
+import { requireRole } from "@/lib/auth"
+import { errorResponse } from "@/lib/errors"
 
-export async function POST(request: NextRequest) {
-  // 1. Auth guard — must be authenticated
-  const authResult = await requireAuth(request);
-  if (!authResult.authenticated || !authResult.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(request: Request): Promise<Response> {
+  try {
+    // 1. Auth + role guard — requireRole throws ApiAuthError(401) if not authed,
+    //    ApiAuthError(403) if role is not "admin". errorResponse handles both.
+    const { userId } = await requireRole(request, ["admin"])
+
+    // 2. Dialer stop logic placeholder
+    // TODO: integrate with dialer service
+    return NextResponse.json(
+      { status: "stopped", initiated_by: userId },
+      { status: 200 }
+    )
+  } catch (error) {
+    return errorResponse(error)
   }
-
-  // 2. Role guard — must be admin
-  const roleResult = requireRole(authResult.user, "admin");
-  if (!roleResult.authorized) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  // 3. Dialer stop logic (stub)
-  const userId = authResult.user.id;
-  console.log(`[dialer:stop] user=${userId}`);
-
-  return NextResponse.json(
-    { success: true, message: "Dialer stopped" },
-    { status: 200 }
-  );
 }

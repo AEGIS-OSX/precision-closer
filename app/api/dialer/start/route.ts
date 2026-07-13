@@ -1,63 +1,51 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAuth, requireRole } from "@/lib/auth";
+import { NextResponse } from "next/server"
+import { requireRole } from "@/lib/auth"
+import { errorResponse, ApiValidationError } from "@/lib/errors"
 
-const rateLimitMap = new Map<string, number>();
-const RATE_LIMIT_WINDOW_MS = 60_000;
+// Per-user rate limit: max 1 start call per 60 seconds
+const startRateLimit = new Map<string, number>()
 
-export async function POST(request: NextRequest) {
-  // 1. Auth guard — must be authenticated
-  const authResult = await requireAuth(request);
-  if (!authResult.authenticated || !authResult.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // 2. Role guard — must be admin
-  const roleResult = requireRole(authResult.user, "admin");
-  if (!roleResult.authorized) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  // 3. Rate limiting — no more than 1 start call per 60s per user
-  const userId = authResult.user.id;
-  const now = Date.now();
-  const lastCall = rateLimitMap.get(userId);
-  if (lastCall && now - lastCall < RATE_LIMIT_WINDOW_MS) {
-    return NextResponse.json(
-      { error: "Rate limit exceeded. Try again later." },
-      { status: 429 }
-    );
-  }
-  rateLimitMap.set(userId, now);
-
-  // 4. Input validation
-  let body: Record<string, unknown>;
+export async function POST(request: Request): Promise<Response> {
   try {
-    body = await request.json();
-  } catch {
+    // 1. Auth + role guard — requireRole throws ApiAuthError(401) if not authed,
+    //    ApiAuthError(403) if role is not "admin". errorResponse handles both.
+    const { userId } = await requireRole(request, ["admin"])
+
+    // 2. Per-user rate limit: 1 call per 60 seconds
+    const now = Date.now()
+    const lastCall = startRateLimit.get(userId)
+    if (lastCall !== undefined && now - lastCall < 60_000) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded: dialer start may only be called once per 60 seconds" },
+        { status: 429 }
+      )
+    }
+    startRateLimit.set(userId, now)
+
+    // 3. Input validation
+    const body = await request.json()
+    const batchSize = body?.batch_size
+
+    if (
+      batchSize === undefined ||
+      batchSize === null ||
+      !Number.isInteger(batchSize) ||
+      batchSize < 1 ||
+      batchSize > 1000
+    ) {
+      throw new ApiValidationError(
+        "batch_size",
+        "batch_size must be a positive integer between 1 and 1000"
+      )
+    }
+
+    // 4. Dialer start logic placeholder
+    // TODO: integrate with dialer service
     return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 }
-    );
+      { status: "started", batch_size: batchSize, initiated_by: userId },
+      { status: 200 }
+    )
+  } catch (error) {
+    return errorResponse(error)
   }
-
-  const batchSizeRaw = body.batch_size;
-  if (
-    typeof batchSizeRaw !== "number" ||
-    !Number.isInteger(batchSizeRaw) ||
-    batchSizeRaw < 1 ||
-    batchSizeRaw > 1000
-  ) {
-    return NextResponse.json(
-      { error: "batch_size must be a positive integer between 1 and 1000" },
-      { status: 400 }
-    );
-  }
-
-  // 5. Dialer logic (stub)
-  console.log(`[dialer:start] user=${userId} batch_size=${batchSizeRaw}`);
-
-  return NextResponse.json(
-    { success: true, message: "Dialer started", batch_size: batchSizeRaw },
-    { status: 200 }
-  );
 }
