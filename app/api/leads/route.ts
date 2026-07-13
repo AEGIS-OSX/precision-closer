@@ -8,10 +8,10 @@ import type { Lead, CreateLeadRequest, CreateLeadResponse, PaginatedResponse } f
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    await requireAuth(request)
+    const { userId } = await requireAuth(request)
     const authHeader = request.headers.get("authorization") ?? ""
-    const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
-    const rl = await checkRateLimit(userId)
+    const rlKey = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
+    const rl = await checkRateLimit(rlKey)
     if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
 
     const { searchParams } = new URL(request.url)
@@ -20,7 +20,7 @@ export async function GET(request: Request): Promise<Response> {
     const perPage = Math.min(100, Math.max(1, parseInt(searchParams.get("per_page") || "20", 10) || 20))
 
     const client = createServerClient()
-    let query = client.from("leads").select("*", { count: "exact" })
+    let query = client.from("leads").select("*", { count: "exact" }).eq("owner_id", userId)
 
     if (status) {
       query = query.eq("status", status)
@@ -54,10 +54,10 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    await requireAuth(request)
+    const { userId } = await requireAuth(request)
     const authHeader = request.headers.get("authorization") ?? ""
-    const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
-    const rl = await checkRateLimit(userId)
+    const rlKey = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
+    const rl = await checkRateLimit(rlKey)
     if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
 
     const body = (await request.json()) as CreateLeadRequest
@@ -95,6 +95,7 @@ export async function POST(request: Request): Promise<Response> {
         company_name: body.company_name || null,
         metadata: body.metadata || null,
         status: "not_called",
+        owner_id: userId,
       })
       .select()
       .single()
