@@ -30,14 +30,18 @@ function serializeCSV(leads: Lead[]): string {
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    await requireAuth(request)
+    const { userId } = await requireAuth(request)
     const authHeader = request.headers.get("authorization") ?? ""
-    const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
-    const rl = await checkRateLimit(userId)
+    const rlKey = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
+    const rl = await checkRateLimit(rlKey)
     if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
 
     const client = createServerClient()
-    const { data, error } = await client.from("leads").select("*").order("created_at", { ascending: false })
+    const { data, error } = await client
+      .from("leads")
+      .select("*")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: false })
 
     if (error) {
       throw error
