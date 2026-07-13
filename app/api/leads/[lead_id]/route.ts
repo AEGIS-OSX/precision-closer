@@ -1,11 +1,15 @@
+import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase-server"
 import { requireAuth } from "@/lib/auth"
+import { checkRateLimit } from "@/lib/rate-limit"
 import { errorResponse, ApiNotFoundError } from "@/lib/errors"
 import type { Lead, LeadStatus } from "@/lib/types"
 
 export async function GET(request: Request, { params }: { params: { lead_id: string } }): Promise<Response> {
   try {
-    await requireAuth(request)
+    const userId = await requireAuth(request)
+    const rl = await checkRateLimit(userId)
+    if (!rl.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
 
     const client = createServerClient()
     const { data, error } = await client
@@ -29,7 +33,9 @@ export async function GET(request: Request, { params }: { params: { lead_id: str
 
 export async function PATCH(request: Request, { params }: { params: { lead_id: string } }): Promise<Response> {
   try {
-    await requireAuth(request)
+    const userId = await requireAuth(request)
+    const rl = await checkRateLimit(userId)
+    if (!rl.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
 
     const body = (await request.json()) as Record<string, unknown>
 

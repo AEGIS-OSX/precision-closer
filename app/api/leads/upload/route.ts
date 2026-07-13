@@ -1,5 +1,7 @@
+import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase-server"
 import { requireAuth } from "@/lib/auth"
+import { checkRateLimit } from "@/lib/rate-limit"
 import { errorResponse, ApiValidationError } from "@/lib/errors"
 import { validateE164 } from "@/lib/validate"
 
@@ -24,7 +26,14 @@ function parseCSV(text: string): Array<Record<string, string>> {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    await requireAuth(request)
+    const userId = await requireAuth(request)
+    const rl = await checkRateLimit(userId)
+    if (!rl.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+
+    const contentLength = request.headers.get('content-length')
+    if (contentLength && parseInt(contentLength, 10) > 10485760) {
+      return NextResponse.json({ error: 'File too large. Maximum size is 10MB.' }, { status: 413 })
+    }
 
     const formData = await request.formData()
     const fileEntry = formData.get("file")
@@ -34,6 +43,10 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const file = fileEntry as File
+    if (file.size > 10485760) {
+      return NextResponse.json({ error: 'File too large. Maximum size is 10MB.' }, { status: 413 })
+    }
+
     const text = (await file.text()).replace(/^\uFEFF/, "")
     const rows = parseCSV(text)
 
