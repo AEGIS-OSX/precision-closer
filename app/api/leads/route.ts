@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase-server"
 import { requireAuth } from "@/lib/auth"
-import { checkRateLimit } from "@/lib/rate-limit"
 import { errorResponse, ApiValidationError } from "@/lib/errors"
 import { validateE164, validateRequiredString } from "@/lib/validate"
+import { checkRateLimit } from "@/lib/rate-limit"
 import type { Lead, CreateLeadRequest, CreateLeadResponse, PaginatedResponse } from "@/lib/types"
 
 export async function GET(request: Request): Promise<Response> {
   try {
     await requireAuth(request)
-    const authHeader = request.headers.get("authorization") ?? request.headers.get("Authorization") ?? ""
+    const authHeader = request.headers.get("authorization") ?? ""
     const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
     const rl = await checkRateLimit(userId)
     if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
@@ -55,7 +55,7 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   try {
     await requireAuth(request)
-    const authHeader = request.headers.get("authorization") ?? request.headers.get("Authorization") ?? ""
+    const authHeader = request.headers.get("authorization") ?? ""
     const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
     const rl = await checkRateLimit(userId)
     if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })

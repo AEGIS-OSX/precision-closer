@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase-server"
 import { requireAuth } from "@/lib/auth"
-import { checkRateLimit } from "@/lib/rate-limit"
 import { errorResponse } from "@/lib/errors"
+import { checkRateLimit } from "@/lib/rate-limit"
 import type { Lead } from "@/lib/types"
 
 function escapeCSV(value: string | null | undefined): string {
   const str = value ?? ""
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-    return `"${str.replace(/"/g, '\\"')}"`
+    return `"${str.replace(/"/g, '""')}"`
   }
   return str
 }
@@ -31,7 +31,7 @@ function serializeCSV(leads: Lead[]): string {
 export async function GET(request: Request): Promise<Response> {
   try {
     await requireAuth(request)
-    const authHeader = request.headers.get("authorization") ?? request.headers.get("Authorization") ?? ""
+    const authHeader = request.headers.get("authorization") ?? ""
     const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
     const rl = await checkRateLimit(userId)
     if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })

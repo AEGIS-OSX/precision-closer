@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase-server"
 import { requireAuth } from "@/lib/auth"
-import { checkRateLimit } from "@/lib/rate-limit"
 import { errorResponse, ApiValidationError } from "@/lib/errors"
 import { validateE164 } from "@/lib/validate"
+import { checkRateLimit } from "@/lib/rate-limit"
 
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024 // 10MB
+const MAX_FILE_SIZE = 10_485_760 // 10 MB
 
 function parseCSV(text: string): Array<Record<string, string>> {
   const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "")
@@ -28,17 +28,20 @@ function parseCSV(text: string): Array<Record<string, string>> {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    // File size guard (Content-Length header)
-    const contentLengthHeader = request.headers.get("content-length")
-    if (contentLengthHeader !== null && parseInt(contentLengthHeader, 10) > MAX_UPLOAD_BYTES) {
-      return NextResponse.json({ error: "File too large. Maximum size is 10MB." }, { status: 413 })
-    }
-
     await requireAuth(request)
-    const authHeader = request.headers.get("authorization") ?? request.headers.get("Authorization") ?? ""
+    const authHeader = request.headers.get("authorization") ?? ""
     const userId = authHeader.replace(/^Bearer\s+/i, "") || "anonymous"
     const rl = await checkRateLimit(userId)
     if (!rl.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
+
+    // Size check via Content-Length header before reading body
+    const contentLength = request.headers.get("content-length")
+    if (contentLength !== null && parseInt(contentLength, 10) > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File too large. Maximum size is 10MB." },
+        { status: 413 }
+      )
+    }
 
     const formData = await request.formData()
     const fileEntry = formData.get("file")
@@ -49,9 +52,12 @@ export async function POST(request: Request): Promise<Response> {
 
     const file = fileEntry as File
 
-    // File size guard (stream/body size when Content-Length absent)
-    if (file.size > MAX_UPLOAD_BYTES) {
-      return NextResponse.json({ error: "File too large. Maximum size is 10MB." }, { status: 413 })
+    // Secondary size check on the actual file object
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File too large. Maximum size is 10MB." },
+        { status: 413 }
+      )
     }
 
     const text = (await file.text()).replace(/^\uFEFF/, "")

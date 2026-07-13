@@ -1,9 +1,10 @@
-import { ApiRateLimitError } from "@/lib/errors";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
-const WINDOW_MS = 60000;
+const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 100;
 
-// In-process fallback for local dev (no Redis env vars)
+// In-process fallback for local dev when Redis env vars are absent
 const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
 
 function checkRateLimitInProcess(userId: string): { allowed: boolean; remaining: number } {
@@ -22,59 +23,42 @@ function checkRateLimitInProcess(userId: string): { allowed: boolean; remaining:
 
   record.count += 1;
   const remaining = Math.max(0, MAX_REQUESTS - record.count);
-  if (record.count > MAX_REQUESTS) {
-    return { allowed: false, remaining: 0 };
-  }
-  return { allowed: true, remaining };
+  const allowed = record.count <= MAX_REQUESTS;
+  return { allowed, remaining };
 }
 
-let redisRatelimit: {
-  limit: (id: string) => Promise<{ success: boolean; remaining: number }>;
-} | null = null;
+let ratelimit: Ratelimit | null = null;
 
-async function getRedisRatelimit() {
-  if (redisRatelimit) return redisRatelimit;
+function getRatelimit(): Ratelimit | null {
+  if (ratelimit) return ratelimit;
 
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
 
   if (!url || !token) {
     return null;
   }
 
-  try {
-    const { Redis } = await import("@upstash/redis");
-    const { Ratelimit } = await import("@upstash/ratelimit");
+  ratelimit = new Ratelimit({
+    redis: new Redis({ url, token }),
+    limiter: Ratelimit.slidingWindow(MAX_REQUESTS, "1 m"),
+    prefix: "rl:precision-closer",
+  });
 
-    const redis = new Redis({ url, token });
-    redisRatelimit = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(MAX_REQUESTS, "1 m"),
-      analytics: false,
-    });
-    return redisRatelimit;
-  } catch {
-    return null;
-  }
+  return ratelimit;
 }
 
 export async function checkRateLimit(userId: string): Promise<{ allowed: boolean; remaining: number }> {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const rl = getRatelimit();
 
-  if (!url || !token) {
+  if (!rl) {
     console.warn(
-      "[rate-limit] UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN not set. " +
-        "Falling back to in-process rate limiter. This is NOT safe for multi-instance deployments."
+      "[rate-limit] UPSTASH_REDIS_REST_URL not set -- falling back to in-process rate limiter. " +
+        "This is NOT safe for multi-instance deployments."
     );
     return checkRateLimitInProcess(userId);
   }
 
-  const limiter = await getRedisRatelimit();
-  if (!limiter) {
-    return checkRateLimitInProcess(userId);
-  }
-
-  const result = await limiter.limit(userId);
-  return { allowed: result.success, remaining: result.remaining };
+  const { success, remaining } = await rl.limit(userId);
+  return { allowed: success, remaining };
 }
