@@ -12,7 +12,15 @@ interface JoinRouteProps {
 export function JoinRoute({ sessionId }: JoinRouteProps) {
   const { getSession } = useLiveSession();
   const [state, setState] = useState<
-    BridgeState>('loading');
+    BridgeState>(() => {
+      try {
+        const session = getSession(sessionId);
+        if (session && session.status === 'active') return 'active';
+        return 'waiting';
+      } catch {
+        return 'error';
+      }
+    });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
