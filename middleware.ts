@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+// Use Redis.fromEnv() so the Edge-safe REST build is selected. Constructing
+// with `new Redis({...})` pulls the nodejs conditional export, which reads
+// process.version and is unsupported in the Edge Runtime (middleware is
+// Edge-only and cannot opt into the Node runtime).
+const redis = Redis.fromEnv();
 
 const ipRatelimit = new Ratelimit({
   redis,
