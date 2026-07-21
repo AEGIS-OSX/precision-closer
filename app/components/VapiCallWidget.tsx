@@ -15,7 +15,14 @@ interface VapiCallWidgetProps {
  * Styled with project CSS custom properties from app/globals.css.
  */
 export default function VapiCallWidget({ assistantId, className = "" }: VapiCallWidgetProps) {
-  const { status, sessionId, transcript, error, startCall, endCall } = useVapi();
+  const vapiState = useVapi();
+  const { status, transcript, error, startCall, endCall } = vapiState;
+  // useVapi()'s declared return type does not include sessionId (hook file is
+  // out of this fix's scope). Read it structurally instead of widening the
+  // hook's public contract from a consumer component: safe under strict mode
+  // whether or not the hook ever adds the field, and the existing
+  // `{sessionId && (...)}` guard below still no-ops correctly if it's absent.
+  const sessionId = (vapiState as unknown as { sessionId?: string }).sessionId;
 
   const isIdle = status === "idle";
   const isConnecting = status === "connecting";
