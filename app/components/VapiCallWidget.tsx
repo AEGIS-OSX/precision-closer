@@ -2,6 +2,19 @@
 
 import { useVapi } from "@/lib/hooks/use-vapi";
 
+/**
+ * useVapi()'s declared return type does not include `sessionId` (the hook
+ * file is out of this fix's scope). Read it through a narrow runtime guard
+ * -- a single assertion to a partial shape plus a typeof check -- instead
+ * of the prior blind `as unknown as {...}` cast. Provably safe under
+ * strict mode regardless of whether the hook's public type ever adds the
+ * field, and avoids the double-cast-through-unknown pattern.
+ */
+function getSessionId(state: ReturnType<typeof useVapi>): string | undefined {
+  const maybe = state as { sessionId?: unknown };
+  return typeof maybe.sessionId === "string" ? maybe.sessionId : undefined;
+}
+
 interface VapiCallWidgetProps {
   /** VAPI assistant ID to connect to when the call starts. */
   assistantId: string;
@@ -17,12 +30,7 @@ interface VapiCallWidgetProps {
 export default function VapiCallWidget({ assistantId, className = "" }: VapiCallWidgetProps) {
   const vapiState = useVapi();
   const { status, transcript, error, startCall, endCall } = vapiState;
-  // useVapi()'s declared return type does not include sessionId (hook file is
-  // out of this fix's scope). Read it structurally instead of widening the
-  // hook's public contract from a consumer component: safe under strict mode
-  // whether or not the hook ever adds the field, and the existing
-  // `{sessionId && (...)}` guard below still no-ops correctly if it's absent.
-  const sessionId = (vapiState as unknown as { sessionId?: string }).sessionId;
+  const sessionId = getSessionId(vapiState);
 
   const isIdle = status === "idle";
   const isConnecting = status === "connecting";
