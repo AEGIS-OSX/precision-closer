@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
+import VoiceAgent from '@/components/VoiceAgent';
 
 function Section({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <section className={`py-[var(--space-8)] ${className}`}>
+    <section className={`mb-[var(--space-10)] ${className}`}>
       {children}
     </section>
   );
@@ -10,7 +11,7 @@ function Section({ children, className = "" }: { children: ReactNode; className?
 
 function H2({ children }: { children: ReactNode }) {
   return (
-    <h2 className="text-[length:var(--font-size-section)] font-[family-name:var(--font-display)] font-semibold text-[var(--color-text-primary)] mt-[var(--space-8)] mb-[var(--space-4)]">
+    <h2 className="text-[var(--color-text-primary)] text-[length:var(--font-size-3)] font-[family-name:var(--font-heading)] font-semibold tracking-tight mb-[var(--space-4)]">
       {children}
     </h2>
   );
@@ -18,97 +19,45 @@ function H2({ children }: { children: ReactNode }) {
 
 function H3({ children }: { children: ReactNode }) {
   return (
-    <h3 className="text-[length:var(--font-size-ui)] font-[family-name:var(--font-display)] font-medium text-[var(--color-text-primary)] mt-[var(--space-6)] mb-[var(--space-3)]">
+    <h3 className="text-[var(--color-text-primary)] text-[length:var(--font-size-2)] font-[family-name:var(--font-heading)] font-medium tracking-tight mb-[var(--space-2)]">
       {children}
     </h3>
   );
 }
 
-function H4({ children }: { children: ReactNode }) {
+function P({ children }: { children: ReactNode }) {
   return (
-    <h4 className="text-[length:var(--font-size-body)] font-[family-name:var(--font-display)] font-medium text-[var(--color-text-primary)] mt-[var(--space-4)] mb-[var(--space-2)]">
-      {children}
-    </h4>
-  );
-}
-
-function P({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return (
-    <p className={`text-[length:var(--font-size-body)] leading-[var(--line-height-normal)] text-[var(--color-text-primary)] mb-[var(--space-4)] ${className}`}>
+    <p className="text-[var(--color-text-secondary)] text-[length:var(--font-size-1)] leading-relaxed mb-[var(--space-3)]">
       {children}
     </p>
   );
 }
 
-function CodeBlock({ children, lang = "json" }: { children: ReactNode; lang?: string }) {
+function UL({ children }: { children: ReactNode }) {
   return (
-    <pre className="bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-[var(--radius-md)] p-[var(--space-4)] overflow-x-auto mb-[var(--space-4)]">
-      <code className="text-[length:var(--font-size-data)] font-[family-name:var(--font-mono)] text-[var(--color-text-transcript)]">
-        {children}
-      </code>
-    </pre>
+    <ul className="list-disc list-inside text-[var(--color-text-secondary)] text-[length:var(--font-size-1)] leading-relaxed space-y-[var(--space-1)] mb-[var(--space-3)]">
+      {children}
+    </ul>
   );
 }
 
-function InlineCode({ children }: { children: ReactNode }) {
+function LI({ children }: { children: ReactNode }) {
+  return <li>{children}</li>;
+}
+
+function Code({ children }: { children: ReactNode }) {
   return (
-    <code className="bg-[var(--color-surface-2)] text-[length:var(--font-size-data)] font-[family-name:var(--font-mono)] text-[var(--color-text-transcript)] px-[var(--space-1)] py-[var(--space-1)] rounded-[var(--radius-sm)]">
+    <code className="bg-[var(--color-surface)] px-[var(--space-1)] py-0.5 rounded text-[var(--color-text-primary)] text-[length:var(--font-size-0)] font-mono">
       {children}
     </code>
   );
 }
 
-function Table({ children }: { children: ReactNode }) {
+function Pre({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-x-auto mb-[var(--space-4)]">
-      <table className="w-full border-collapse">
-        {children}
-      </table>
-    </div>
-  );
-}
-
-function THead({ children }: { children: ReactNode }) {
-  return (
-    <thead>
-      <tr className="border-b border-[var(--color-border)]">
-        {children}
-      </tr>
-    </thead>
-  );
-}
-
-function TBody({ children }: { children: ReactNode }) {
-  return <tbody>{children}</tbody>;
-}
-
-function Th({ children }: { children: ReactNode }) {
-  return (
-    <th className="text-left text-[length:var(--font-size-data)] font-[family-name:var(--font-display)] font-medium text-[var(--color-text-secondary)] py-[var(--space-2)] pr-[var(--space-4)]">
+    <pre className="bg-[var(--color-surface)] p-[var(--space-3)] rounded-lg overflow-x-auto text-[var(--color-text-primary)] text-[length:var(--font-size-0)] font-mono mb-[var(--space-3)]">
       {children}
-    </th>
-  );
-}
-
-function Td({ children }: { children: ReactNode }) {
-  return (
-    <td className="text-[length:var(--font-size-body)] text-[var(--color-text-primary)] py-[var(--space-2)] pr-[var(--space-4)] border-b border-[var(--color-border)]">
-      {children}
-    </td>
-  );
-}
-
-function Badge({ children, color = "neutral" }: { children: ReactNode; color?: "success" | "warning" | "error" | "neutral" }) {
-  const colorMap = {
-    success: "text-[var(--color-semantic-success)]",
-    warning: "text-[var(--color-semantic-warning)]",
-    error: "text-[var(--color-semantic-error)]",
-    neutral: "text-[var(--color-semantic-neutral)]",
-  };
-  return (
-    <span className={`inline-block text-[length:var(--font-size-data)] font-[family-name:var(--font-mono)] font-medium ${colorMap[color]} bg-[var(--color-surface-2)] px-[var(--space-2)] py-[var(--space-1)] rounded-[var(--radius-sm)]`}>
-      {children}
-    </span>
+    </pre>
   );
 }
 
@@ -116,240 +65,138 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[var(--color-canvas)]">
       {/* Hero */}
-      <header className="border-b border-[var(--color-border)]">
-        <div className="max-w-[960px] mx-auto px-[var(--space-4)] md:px-[var(--space-6)] py-[var(--space-12)]">
-          <h1 className="text-[length:var(--font-size-hero)] font-[family-name:var(--font-display)] font-semibold text-[var(--color-text-primary)] leading-[var(--line-height-tight)] mb-[var(--space-4)]">
-            Precision Closer API Documentation
+      <header className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div className="max-w-[960px] mx-auto px-[var(--space-4)] md:px-[var(--space-6)] py-[var(--space-8)]">
+          <h1 className="text-[var(--color-text-primary)] text-[length:var(--font-size-5)] font-[family-name:var(--font-heading)] font-bold tracking-tight mb-[var(--space-3)]">
+            Precision Closer
           </h1>
-          <p className="text-[length:var(--font-size-ui)] text-[var(--color-text-secondary)] leading-[var(--line-height-normal)] max-w-[640px]">
-            Programmatic access to the outbound dialing engine, lead management, and live call monitoring systems.
+          <p className="text-[var(--color-text-secondary)] text-[length:var(--font-size-2)] leading-relaxed max-w-[640px]">
+            AI-powered sales coaching and call analysis platform. Built for teams that close.
           </p>
         </div>
       </header>
 
-      <div className="max-w-[960px] mx-auto px-[var(--space-4)] md:px-[var(--space-6)]">
+      <div className="max-w-[960px] mx-auto px-[var(--space-4)] md:px-[var(--space-6)] py-[var(--space-8)]">
         {/* Overview */}
         <Section>
           <H2>Overview</H2>
           <P>
-            The Precision Closer API provides programmatic access to the outbound dialing engine, lead management, and live call monitoring systems. It is designed for high-performance financial services operations where latency and data integrity are paramount.
+            Precision Closer is a Next.js application that provides AI-driven sales coaching through voice call analysis and real-time feedback. The platform integrates with VAPI AI for voice agent capabilities and uses Upstash Redis for rate limiting and session management.
           </P>
         </Section>
 
-        {/* Authentication */}
+        {/* Architecture */}
         <Section>
-          <H2>Authentication</H2>
+          <H2>Architecture</H2>
+          <P>The application follows a modular architecture with clear separation of concerns:</P>
+          <UL>
+            <LI><strong>App Router</strong> — Next.js 14+ app directory structure with route groups</LI>
+            <LI><strong>API Layer</strong> — Route handlers for external service integration (VAPI, Upstash)</LI>
+            <LI><strong>Components</strong> — Reusable UI components with Tailwind CSS styling</LI>
+            <LI><strong>Hooks</strong> — Custom React hooks for state management and side effects</LI>
+            <LI><strong>Lib</strong> — Utility functions, types, and service clients</LI>
+          </UL>
+        </Section>
+
+        {/* Key Features */}
+        <Section>
+          <H2>Key Features</H2>
+          
+          <H3>Voice Agent Integration</H3>
           <P>
-            All requests must be authenticated using a Bearer token in the{" "}
-            <InlineCode>Authorization</InlineCode>{" "}header.
+            Real-time AI voice coaching powered by VAPI. The <Code>VoiceAgent</Code> component handles call state management, audio streaming, and transcript display. See <Code>components/VoiceAgent.tsx</Code> for implementation details.
           </P>
-          <CodeBlock lang="http">
-            {`Authorization: Bearer <your_api_key>`}
-          </CodeBlock>
+
+          <H3>Rate Limiting</H3>
           <P>
-            API keys are managed in the Precision Closer dashboard. Keep your keys secure; they grant full access to your lead data and dialing infrastructure.
+            Upstash Redis-backed rate limiting protects API endpoints from abuse. Configured via environment variables with sensible defaults for production workloads.
+          </P>
+
+          <H3>Session Management</H3>
+          <P>
+            Secure session handling with middleware-based authentication. Join links with unique session IDs enable team collaboration without complex auth flows.
           </P>
         </Section>
 
-        {/* Rate Limits */}
+        {/* Environment Setup */}
         <Section>
-          <H2>Rate Limits</H2>
+          <H2>Environment Setup</H2>
+          <P>Copy <Code>.env.example</Code> to <Code>.env.local</Code> and configure the following variables:</P>
+          <Pre>
+{`# Upstash Redis (required for rate limiting)
+UPSTASH_REDIS_REST_URL=https://your-instance.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_token_here
+
+# VAPI AI Voice Agent
+NEXT_PUBLIC_VAPI_PUBLIC_KEY=your_vapi_public_key_here
+NEXT_PUBLIC_VAPI_ASSISTANT_ID=your_vapi_assistant_id_here`}
+          </Pre>
           <P>
-            The API enforces a rate limit of 100 requests per minute per organization. Exceeding this limit will return a{" "}
-            <InlineCode>429 Too Many Requests</InlineCode>{" "}response. For high-volume batch operations, use the bulk upload endpoints.
+            Obtain VAPI credentials from <a href="https://dashboard.vapi.ai" className="text-[var(--color-accent)] underline">dashboard.vapi.ai</a>. Upstash credentials are available in your Upstash console.
           </P>
         </Section>
 
-        {/* Endpoints */}
+        {/* Development */}
         <Section>
-          <H2>Endpoints</H2>
+          <H2>Development</H2>
+          <Pre>
+{`# Install dependencies
+npm install
 
-          {/* Leads */}
-          <H3>Leads</H3>
+# Run development server
+npm run dev
 
-          <H4>POST /v1/leads</H4>
-          <P>Create a new lead record.</P>
-          <P className="text-[var(--color-text-secondary)] text-[length:var(--font-size-data)] uppercase tracking-wide mb-[var(--space-2)]">
-            Parameters
-          </P>
-          <ul className="list-disc list-inside mb-[var(--space-4)] text-[length:var(--font-size-body)] text-[var(--color-text-primary)] space-y-[var(--space-1)]">
-            <li>
-              <InlineCode>first_name</InlineCode>{" "}(string, required): Lead&apos;s first name.
-            </li>
-            <li>
-              <InlineCode>last_name</InlineCode>{" "}(string, required): Lead&apos;s last name.
-            </li>
-            <li>
-              <InlineCode>phone_number</InlineCode>{" "}(string, required): E.164 formatted phone number.
-            </li>
-            <li>
-              <InlineCode>company_name</InlineCode>{" "}(string, optional): Legal business name.
-            </li>
-            <li>
-              <InlineCode>metadata</InlineCode>{" "}(object, optional): Key-value pairs for custom tracking.
-            </li>
-          </ul>
-          <P className="text-[var(--color-text-secondary)] text-[length:var(--font-size-data)] uppercase tracking-wide mb-[var(--space-2)]">
-            Example Request
-          </P>
-          <CodeBlock>
-            {`{
-  "first_name": "John",
-  "last_name": "Doe",
-  "phone_number": "+15550109999",
-  "company_name": "Doe Logistics LLC"
-}`}
-          </CodeBlock>
-          <P className="text-[var(--color-text-secondary)] text-[length:var(--font-size-data)] uppercase tracking-wide mb-[var(--space-2)]">
-            Example Response
-          </P>
-          <CodeBlock>
-            {`{
-  "id": "lead_8f2a1b3c",
-  "status": "not_called",
-  "created_at": "2026-07-12T21:00:00Z"
-}`}
-          </CodeBlock>
+# Type check
+npm run typecheck
 
-          <H4>GET /v1/leads/&#123;id&#125;</H4>
-          <P>Retrieve the current state and qualification data for a specific lead.</P>
-          <P className="text-[var(--color-text-secondary)] text-[length:var(--font-size-data)] uppercase tracking-wide mb-[var(--space-2)]">
-            Example Response
-          </P>
-          <CodeBlock>
-            {`{
-  "id": "lead_8f2a1b3c",
-  "status": "qualified",
-  "qualification_data": {
-    "capital_type": "line_of_credit",
-    "amount_requested": 150000,
-    "use_of_funds": "inventory_expansion",
-    "active_debt": true,
-    "credit_score_range": "720-750"
-  }
-}`}
-          </CodeBlock>
-
-          {/* Calls */}
-          <H3>Calls</H3>
-
-          <H4>POST /v1/calls</H4>
-          <P>Initiate an outbound dial for a specific lead.</P>
-          <P className="text-[var(--color-text-secondary)] text-[length:var(--font-size-data)] uppercase tracking-wide mb-[var(--space-2)]">
-            Parameters
-          </P>
-          <ul className="list-disc list-inside mb-[var(--space-4)] text-[length:var(--font-size-body)] text-[var(--color-text-primary)] space-y-[var(--space-1)]">
-            <li>
-              <InlineCode>lead_id</InlineCode>{" "}(string, required): The ID of the lead to dial.
-            </li>
-            <li>
-              <InlineCode>script_id</InlineCode>{" "}(string, required): The ID of the branching logic script to use.
-            </li>
-            <li>
-              <InlineCode>voice_id</InlineCode>{" "}(string, optional): Override the default voice model.
-            </li>
-          </ul>
-          <P className="text-[var(--color-text-secondary)] text-[length:var(--font-size-data)] uppercase tracking-wide mb-[var(--space-2)]">
-            Example Response
-          </P>
-          <CodeBlock>
-            {`{
-  "call_id": "call_4d9e2f1a",
-  "status": "dialing",
-  "uri": "/v1/calls/call_4d9e2f1a"
-}`}
-          </CodeBlock>
-
-          <H4>POST /v1/calls/&#123;id&#125;/takeover</H4>
+# Build for production
+npm run build`}
+          </Pre>
           <P>
-            Seamlessly transition the live call from the AI agent to the operator. This endpoint pre-warms the audio bridge to ensure sub-5-second join latency.
+            The dev server runs on <Code>http://localhost:3000</Code>. API routes are available at <Code>/api/*</Code>.
           </P>
-          <P className="text-[var(--color-text-secondary)] text-[length:var(--font-size-data)] uppercase tracking-wide mb-[var(--space-2)]">
-            Example Response
-          </P>
-          <CodeBlock>
-            {`{
-  "status": "bridging",
-  "bridge_uri": "wss://api.precisioncloser.cc/v1/bridge/call_4d9e2f1a"
-}`}
-          </CodeBlock>
         </Section>
 
-        {/* Error Codes */}
+        {/* Deployment */}
         <Section>
-          <H2>Error Codes</H2>
-          <Table>
-            <THead>
-              <Th>Code</Th>
-              <Th>Description</Th>
-            </THead>
-            <TBody>
-              <tr>
-                <Td>
-                  <InlineCode>400</InlineCode>
-                </Td>
-                <Td>Bad Request. Missing required parameters or malformed JSON.</Td>
-              </tr>
-              <tr>
-                <Td>
-                  <InlineCode>401</InlineCode>
-                </Td>
-                <Td>Unauthorized. Invalid or missing API key.</Td>
-              </tr>
-              <tr>
-                <Td>
-                  <InlineCode>404</InlineCode>
-                </Td>
-                <Td>Not Found. The requested lead or call ID does not exist.</Td>
-              </tr>
-              <tr>
-                <Td>
-                  <InlineCode>422</InlineCode>
-                </Td>
-                <Td>Unprocessable Entity. The lead is on the DNC list or has an invalid phone number.</Td>
-              </tr>
-              <tr>
-                <Td>
-                  <InlineCode>429</InlineCode>
-                </Td>
-                <Td>Too Many Requests. Rate limit exceeded.</Td>
-              </tr>
-              <tr>
-                <Td>
-                  <InlineCode>500</InlineCode>
-                </Td>
-                <Td>Internal Server Error. An unexpected error occurred on our end.</Td>
-              </tr>
-            </TBody>
-          </Table>
+          <H2>Deployment</H2>
+          <P>
+            Deploy to Vercel with zero configuration. Ensure all environment variables are set in the Vercel dashboard before deploying.
+          </P>
+          <P>
+            Required Vercel environment variables: <Code>UPSTASH_REDIS_REST_URL</Code>, <Code>UPSTASH_REDIS_REST_TOKEN</Code>, <Code>NEXT_PUBLIC_VAPI_PUBLIC_KEY</Code>, <Code>NEXT_PUBLIC_VAPI_ASSISTANT_ID</Code>.
+          </P>
         </Section>
 
-        {/* Webhooks */}
+        {/* API Routes */}
         <Section>
-          <H2>Webhooks</H2>
+          <H2>API Routes</H2>
+          <UL>
+            <LI><Code>POST /api/vapi/start</Code> — Initiates a VAPI voice session</LI>
+            <LI><Code>POST /api/vapi/end</Code> — Ends an active VAPI session</LI>
+            <LI><Code>GET /api/rate-limit</Code> — Check current rate limit status</LI>
+          </UL>
+        </Section>
+
+        {/* Track B */}
+        <Section>
+          <H2>Track B: Voice Agent</H2>
           <P>
-            Precision Closer can push real-time updates to your system when call states change. Configure your webhook URL in the dashboard.
+            The voice agent surface is the primary interaction point for AI coaching. Users initiate calls, receive real-time feedback, and access transcripts post-call. The component is designed for standalone deployment or embedded use within the dashboard.
           </P>
-          <H3>Events</H3>
-          <ul className="list-disc list-inside mb-[var(--space-4)] text-[length:var(--font-size-body)] text-[var(--color-text-primary)] space-y-[var(--space-2)]">
-            <li>
-              <InlineCode>call.connected</InlineCode>{" "}— Fired when the lead answers.
-            </li>
-            <li>
-              <InlineCode>call.qualified</InlineCode>{" "}— Fired when the agent completes the qualification flow.
-            </li>
-            <li>
-              <InlineCode>call.failed</InlineCode>{" "}— Fired on busy, no-answer, or disconnected signals.
-            </li>
-          </ul>
+          <P>
+            Access the voice agent at <Code>/join/&#123;sessionId&#125;</Code> or via the dashboard below.
+          </P>
         </Section>
       </div>
+
+      <VoiceAgent />
 
       {/* Footer */}
       <footer className="border-t border-[var(--color-border)] mt-[var(--space-12)]">
         <div className="max-w-[960px] mx-auto px-[var(--space-4)] md:px-[var(--space-6)] py-[var(--space-6)]">
-          <p className="text-[length:var(--font-size-data)] text-[var(--color-text-secondary)]">
-            Precision Closer API — Documentation v1.0.0
+          <p className="text-[var(--color-text-tertiary)] text-[length:var(--font-size-0)]">
+            Precision Closer — Built with Next.js, VAPI AI, and Upstash Redis.
           </p>
         </div>
       </footer>
